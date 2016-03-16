@@ -3,50 +3,84 @@
 #include <cstdint>
 #include <ostream>
 
-enum Endian
-{
-	BigEndian = 0x1, LittleEndian = 0x2
-};
-
 class BinaryBuffer
 {
 public:
 	BinaryBuffer();
-	void Append(uint8_t byte);
-	void Append(uint8_t *data, size_t sz);
-	template<typename T>
-	void Append(T data)
-	{
-		if (_endian == Endian::LittleEndian)
-		{
-			if (_size + sizeof(data) >= _capacity)
-			{
-				increaseCapacity();
-			}
+	void Write(uint8_t byte);
+	void Write(uint8_t *data, size_t sz);
 
-			T *dataPtr = reinterpret_cast<T *>(&_data[_size]);
-			*dataPtr = data;
-			_size += sizeof(data);
-		}
-		else
+	template<typename T>
+	void WriteLE(T data)
+	{
+		if (_size + sizeof(data) >= _capacity)
 		{
-			uint8_t *byteDataPtr = reinterpret_cast<uint8_t *>(&data);
-			for (size_t i = sizeof(T); i > 0; --i)
-			{
-				Append(byteDataPtr[i - 1]);
-			}
+			increaseCapacity();
+		}
+
+		T *dataPtr = reinterpret_cast<T *>(&_data[_size]);
+		*dataPtr = data;
+		_size += sizeof(T);
+	}
+
+	template<typename T>
+	void WriteBE(T data)
+	{
+		uint8_t *byteDataPtr = reinterpret_cast<uint8_t *>(&data);
+		for (size_t i = sizeof(T); i > 0; --i)
+		{
+			Write(byteDataPtr[i - 1]);
 		}
 	}
+
 	template<typename T>
-	void Append(T *data, size_t sz)
+	void WriteLE(T *data, size_t sz)
 	{
 		for (size_t i = 0; i < sz; ++i)
 		{
-			Append<T>(data[i]);
+			WriteLE<T>(data[i]);
 		}
 	}
-	void SetEndian(Endian endian);
-	Endian GetEndian();
+	
+	template<typename T>
+	void WriteBE(T *data, size_t sz)
+	{
+		for (size_t i = 0; i < sz; ++i)
+		{
+			WriteBE<T>(data[i]);
+		}
+	}
+
+	template<typename T>
+	T ReadLE(size_t offset)
+	{
+		if (offset + sizeof(T) > _size)
+		{
+			throw std::out_of_range("offset is out of range");
+		}
+
+		T *resPtr = reinterpret_cast<T *>(&_data[offset]);
+		return static_cast<T>(*resPtr);
+	}
+
+	template<typename T>
+	T ReadBE(size_t offset)
+	{
+		if (offset + sizeof(T) > _size)
+		{
+			throw std::out_of_range("offset is out of range");
+		}
+
+		T result = 0;
+		result |= _data[offset];
+		for (size_t i = offset + 1; i < offset + sizeof(T); ++i)
+		{
+			result <<= 8;
+			result |= _data[i];
+		}
+		return result;
+	}
+
 	const uint8_t *Data();
 	size_t Size();
 	size_t Capacity();
@@ -56,7 +90,6 @@ private:
 	uint8_t *_data;
 	size_t _capacity;
 	size_t _size;
-	Endian _endian;
 
 	static const size_t _defaultCapacity = 64U;
 

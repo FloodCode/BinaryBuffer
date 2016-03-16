@@ -5,10 +5,9 @@ BinaryBuffer::BinaryBuffer()
 	_size = 0;
 	_capacity = _defaultCapacity;
 	_data = new uint8_t[_capacity];
-	_endian = Endian::LittleEndian;
 }
 
-void BinaryBuffer::Append(uint8_t byte)
+void BinaryBuffer::Write(uint8_t byte)
 {
 	if (_size == _capacity)
 	{
@@ -19,22 +18,12 @@ void BinaryBuffer::Append(uint8_t byte)
 	_size++;
 }
 
-void BinaryBuffer::Append(uint8_t *data, size_t sz)
+void BinaryBuffer::Write(uint8_t *data, size_t sz)
 {
 	for (size_t i = 0; i < sz; ++i)
 	{
-		Append(data[i]);
+		Write(data[i]);
 	}
-}
-
-void BinaryBuffer::SetEndian(Endian endian)
-{
-	_endian = endian;
-}
-
-Endian BinaryBuffer::GetEndian()
-{
-	return _endian;
 }
 
 const uint8_t *BinaryBuffer::Data()
